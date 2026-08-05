@@ -1,9 +1,15 @@
+/**
+ * Phase 034 - Enterprise HRM System
+ * Enhanced HR Dashboard
+ */
+
 import { useState, useEffect } from 'react';
 import { getHRDashboard } from '../services/hrApi';
-import type { HRDashboard } from '../types';
+import type { HRDashboard, HRDashboardStats } from '../types';
 
 export function HRDashboard() {
   const [dashboard, setDashboard] = useState<HRDashboard | null>(null);
+  const [stats, setStats] = useState<HRDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,14 +47,27 @@ export function HRDashboard() {
     );
   }
 
-  const stats = [
+  const employeeStats = [
     { label: 'Total Employees', value: dashboard?.employees ?? 0, icon: '👥', color: 'bg-blue-500' },
+    { label: 'Active', value: stats?.employees.active ?? 0, icon: '✅', color: 'bg-green-500' },
+    { label: 'New Joinings', value: stats?.employees.new_joining ?? 0, icon: '🎉', color: 'bg-purple-500' },
+    { label: 'Resigned', value: stats?.employees.resigned ?? 0, icon: '👋', color: 'bg-orange-500' },
+  ];
+
+  const workflowStats = [
+    { label: 'Pending Interviews', value: stats?.recruitment.pending_interviews ?? 0, icon: '📋', color: 'bg-indigo-500' },
+    { label: 'Pending Confirmation', value: stats?.workflow.pending_confirmation ?? 0, icon: '⏳', color: 'bg-yellow-500' },
+    { label: 'Pending Transfer', value: stats?.workflow.pending_transfer ?? 0, icon: '🔄', color: 'bg-cyan-500' },
+    { label: 'Pending Exit Clearance', value: stats?.workflow.pending_exit_clearance ?? 0, icon: '🚪', color: 'bg-red-500' },
+  ];
+
+  const payrollStats = [
     { label: 'Pending Leaves', value: dashboard?.pending_leaves ?? 0, icon: '📋', color: 'bg-yellow-500' },
     { label: 'Pending Loans', value: dashboard?.pending_loans ?? 0, icon: '💰', color: 'bg-purple-500' },
     { label: 'Pending Overtimes', value: dashboard?.pending_overtimes ?? 0, icon: '⏰', color: 'bg-green-500' },
   ];
 
-  const payrollStats = [
+  const payrollSummary = [
     { label: 'Total Payslips', value: dashboard?.month_payroll?.total ?? 0, icon: '📄', color: 'bg-indigo-500' },
     { label: 'Total Gross', value: `$${(dashboard?.month_payroll?.gross ?? 0).toLocaleString()}`, icon: '💵', color: 'bg-teal-500' },
     { label: 'Total Net', value: `$${(dashboard?.month_payroll?.net ?? 0).toLocaleString()}`, icon: '💰', color: 'bg-emerald-500' },
@@ -66,9 +85,30 @@ export function HRDashboard() {
         </button>
       </div>
 
+      {/* Employee Stats Grid */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Employee Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {employeeStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+            >
+              <div className={`${stat.color} p-3 rounded-lg text-white text-xl`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {workflowStats.map((stat) => (
           <div
             key={stat.label}
             className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -88,9 +128,23 @@ export function HRDashboard() {
 
       {/* Payroll Stats */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">This Month's Payroll</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Payroll & Deductions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {payrollStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+            >
+              <div className={`${stat.color} p-3 rounded-lg text-white text-xl`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+          {payrollSummary.map((stat) => (
             <div
               key={stat.label}
               className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
@@ -110,14 +164,16 @@ export function HRDashboard() {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           {[
-            { label: 'Add Employee', icon: '👤', link: '/hr/employees/create' },
-            { label: 'Process Payroll', icon: '💵', link: '/hr/payroll' },
-            { label: 'Approve Leave', icon: '✅', link: '/hr/leaves' },
-            { label: 'Add Loan', icon: '🏦', link: '/hr/loans' },
-            { label: 'Record OT', icon: '⏱️', link: '/hr/overtime' },
-            { label: 'View Reports', icon: '📊', link: '/hr/reports' },
+            { label: 'Employees', icon: '👤', link: '/hr/employees' },
+            { label: 'Recruitment', icon: '📢', link: '/hr/recruitment' },
+            { label: 'Job Circular', icon: '📋', link: '/hr/recruitment/circulars' },
+            { label: 'Applicants', icon: '📝', link: '/hr/recruitment/applicants' },
+            { label: 'Interviews', icon: '🎤', link: '/hr/recruitment/interviews' },
+            { label: 'Payroll', icon: '💵', link: '/hr/payroll' },
+            { label: 'Leaves', icon: '🏖️', link: '/hr/leaves' },
+            { label: 'Reports', icon: '📊', link: '/hr/reports' },
           ].map((action) => (
             <a
               key={action.label}
@@ -133,47 +189,30 @@ export function HRDashboard() {
 
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h2>
-        <div className="space-y-3">
-          {dashboard?.pending_leaves ? (
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">📋</span>
-                <span className="text-gray-700">Pending Leave Requests</span>
-              </div>
-              <span className="px-3 py-1 bg-yellow-500 text-white text-sm font-medium rounded-full">
-                {dashboard.pending_leaves}
-              </span>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Workflow Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">📢</span>
+              <span className="font-semibold text-gray-900">Recruitment</span>
             </div>
-          ) : null}
-          
-          {dashboard?.pending_loans ? (
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">💰</span>
-                <span className="text-gray-700">Pending Loan Applications</span>
-              </div>
-              <span className="px-3 py-1 bg-purple-500 text-white text-sm font-medium rounded-full">
-                {dashboard.pending_loans}
-              </span>
+            <div className="space-y-1 text-sm text-gray-600">
+              <p>Active Circulars: {stats?.recruitment.active_circulars ?? 0}</p>
+              <p>Total Applications: {stats?.recruitment.total_applications ?? 0}</p>
+              <p>Selected: {stats?.recruitment.selected ?? 0}</p>
             </div>
-          ) : null}
-          
-          {dashboard?.pending_overtimes ? (
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">⏰</span>
-                <span className="text-gray-700">Pending Overtime Records</span>
-              </div>
-              <span className="px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-full">
-                {dashboard.pending_overtimes}
-              </span>
+          </div>
+          <div className="p-4 bg-purple-50 rounded-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">📈</span>
+              <span className="font-semibold text-gray-900">This Month</span>
             </div>
-          ) : null}
-
-          {!dashboard?.pending_leaves && !dashboard?.pending_loans && !dashboard?.pending_overtimes && (
-            <p className="text-gray-500 text-center py-4">No pending approvals</p>
-          )}
+            <div className="space-y-1 text-sm text-gray-600">
+              <p>New Employees: {stats?.employees.new_joining ?? 0}</p>
+              <p>Gross Salary: ${(stats?.payroll.month_gross ?? 0).toLocaleString()}</p>
+              <p>Net Salary: ${(stats?.payroll.month_net ?? 0).toLocaleString()}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
