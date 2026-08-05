@@ -27,6 +27,9 @@ class DatabaseSeeder extends Seeder
             HolidaySeeder::class,
             BookCategorySeeder::class,
             SubjectSeeder::class,
+            ProductCategorySeeder::class,
+            ProductUnitSeeder::class,
+            WarehouseSeeder::class,
             SettingSeeder::class,
             SuperAdminSeeder::class,
         ]);
