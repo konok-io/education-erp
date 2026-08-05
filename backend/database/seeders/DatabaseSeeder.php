@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             SalaryGradeSeeder::class,
             LeaveTypeSeeder::class,
             HolidaySeeder::class,
+            BookCategorySeeder::class,
+            SubjectSeeder::class,
             SettingSeeder::class,
             SuperAdminSeeder::class,
         ]);
