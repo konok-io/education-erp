@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             LeaveTypeSeeder::class,
             HolidaySeeder::class,
             HrmSeeder::class, // Phase 034 - HRM Seeder
+            CrmSeeder::class, // Phase 035 - CRM Seeder
             BookCategorySeeder::class,
             SubjectSeeder::class,
             ProductCategorySeeder::class,
