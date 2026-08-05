@@ -14,6 +14,17 @@ use App\Models\HR\Holiday;
 use App\Models\HR\Loan;
 use App\Models\HR\LoanRepayment;
 use App\Models\HR\OvertimeRecord;
+use App\Models\HR\AdvanceSalary;
+use App\Models\HR\Bonus;
+use App\Models\HR\Increment;
+use App\Models\HR\Promotion;
+use App\Models\HR\EmployeeExit;
+use App\Models\HR\ProvidentFund;
+use App\Models\HR\PFContribution;
+use App\Models\HR\TaxSlab;
+use App\Models\HR\EmployeeTaxRecord;
+use App\Models\HR\EmployeeAttendance;
+use App\Models\HR\EmployeeLeaveBalance;
 use App\Models\Employee\Employee;
 use App\Models\Attendance\Attendance;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -698,5 +709,565 @@ class HRService
     private function numberToWords(float $number): string
     {
         return number_format($number, 2) . ' Taka';
+    }
+
+    // ===================== ADVANCE SALARY =====================
+
+    public function getAdvanceSalaries(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = AdvanceSalary::with(['employee.profile']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    public function createAdvanceSalary(
+        int $employeeId,
+        float $amount,
+        int $installmentCount,
+        ?string $purpose,
+        int $userId
+    ): AdvanceSalary {
+        $monthlyDeduction = $amount / $installmentCount;
+
+        return AdvanceSalary::create([
+            'uuid' => (string) Str::uuid(),
+            'advance_no' => AdvanceSalary::generateAdvanceNo(),
+            'employee_id' => $employeeId,
+            'requested_amount' => $amount,
+            'approved_amount' => $amount,
+            'monthly_deduction' => $monthlyDeduction,
+            'installment_count' => $installmentCount,
+            'paid_installments' => 0,
+            'remaining_amount' => $amount,
+            'request_date' => now(),
+            'deduction_start_date' => now()->addMonth(),
+            'status' => AdvanceSalary::STATUS_PENDING,
+            'purpose' => $purpose,
+        ]);
+    }
+
+    public function approveAdvanceSalary(string $uuid, int $userId): void
+    {
+        $advance = AdvanceSalary::where('uuid', $uuid)->firstOrFail();
+        $advance->update([
+            'status' => AdvanceSalary::STATUS_APPROVED,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    // ===================== BONUS =====================
+
+    public function getBonuses(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = Bonus::with(['employee.profile']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['bonus_type'])) {
+            $query->where('bonus_type', $filters['bonus_type']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('bonus_date', 'desc')->paginate($perPage);
+    }
+
+    public function createBonus(
+        int $employeeId,
+        string $bonusType,
+        string $name,
+        float $amount,
+        ?float $percentage,
+        string $bonusDate,
+        int $userId
+    ): Bonus {
+        return Bonus::create([
+            'uuid' => (string) Str::uuid(),
+            'bonus_no' => Bonus::generateBonusNo(),
+            'employee_id' => $employeeId,
+            'bonus_type' => $bonusType,
+            'name' => $name,
+            'amount' => $amount,
+            'percentage' => $percentage,
+            'bonus_date' => $bonusDate,
+            'status' => Bonus::STATUS_PENDING,
+        ]);
+    }
+
+    public function approveBonus(string $uuid, int $userId): void
+    {
+        $bonus = Bonus::where('uuid', $uuid)->firstOrFail();
+        $bonus->update([
+            'status' => Bonus::STATUS_APPROVED,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function payBonus(string $uuid): void
+    {
+        $bonus = Bonus::where('uuid', $uuid)->firstOrFail();
+        $bonus->update([
+            'status' => Bonus::STATUS_PAID,
+            'paid_at' => now(),
+        ]);
+    }
+
+    // ===================== INCREMENT =====================
+
+    public function getIncrements(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = Increment::with(['employee.profile']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['increment_type'])) {
+            $query->where('increment_type', $filters['increment_type']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('effective_date', 'desc')->paginate($perPage);
+    }
+
+    public function createIncrement(
+        int $employeeId,
+        string $incrementType,
+        float $previousBasic,
+        float $newBasic,
+        string $effectiveDate,
+        ?int $newGradeId,
+        ?string $reason,
+        int $userId
+    ): Increment {
+        return Increment::create([
+            'uuid' => (string) Str::uuid(),
+            'increment_no' => Increment::generateIncrementNo(),
+            'employee_id' => $employeeId,
+            'increment_type' => $incrementType,
+            'previous_basic' => $previousBasic,
+            'new_basic' => $newBasic,
+            'increment_amount' => $newBasic - $previousBasic,
+            'percentage' => (($newBasic - $previousBasic) / $previousBasic) * 100,
+            'effective_date' => $effectiveDate,
+            'new_grade_id' => $newGradeId,
+            'status' => Increment::STATUS_PENDING,
+            'reason' => $reason,
+        ]);
+    }
+
+    public function approveIncrement(string $uuid, int $userId): void
+    {
+        $increment = Increment::where('uuid', $uuid)->firstOrFail();
+        $increment->update([
+            'status' => Increment::STATUS_APPROVED,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function activateIncrement(string $uuid): void
+    {
+        $increment = Increment::where('uuid', $uuid)->firstOrFail();
+        
+        $employee = Employee::findOrFail($increment->employee_id);
+        
+        if ($increment->new_grade_id) {
+            $employee->update(['salary_grade_id' => $increment->new_grade_id]);
+        }
+        
+        $increment->update(['status' => Increment::STATUS_ACTIVE]);
+    }
+
+    // ===================== PROMOTION =====================
+
+    public function getPromotions(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = Promotion::with(['employee.profile', 'newDesignation', 'newDepartment']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('effective_date', 'desc')->paginate($perPage);
+    }
+
+    public function createPromotion(
+        int $employeeId,
+        ?int $newDepartmentId,
+        int $newDesignationId,
+        ?int $newGradeId,
+        float $previousBasic,
+        float $newBasic,
+        string $promotionDate,
+        string $effectiveDate,
+        ?string $reason,
+        int $userId
+    ): Promotion {
+        $employee = Employee::findOrFail($employeeId);
+
+        return Promotion::create([
+            'uuid' => (string) Str::uuid(),
+            'promotion_no' => Promotion::generatePromotionNo(),
+            'employee_id' => $employeeId,
+            'previous_department_id' => $employee->department_id,
+            'new_department_id' => $newDepartmentId,
+            'previous_designation_id' => $employee->designation_id,
+            'new_designation_id' => $newDesignationId,
+            'previous_grade_id' => $employee->salary_grade_id,
+            'new_grade_id' => $newGradeId,
+            'previous_basic' => $previousBasic,
+            'new_basic' => $newBasic,
+            'promotion_date' => $promotionDate,
+            'effective_date' => $effectiveDate,
+            'status' => Promotion::STATUS_PENDING,
+            'reason' => $reason,
+        ]);
+    }
+
+    public function approvePromotion(string $uuid, int $userId): void
+    {
+        $promotion = Promotion::where('uuid', $uuid)->firstOrFail();
+        $promotion->update([
+            'status' => Promotion::STATUS_APPROVED,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function activatePromotion(string $uuid): void
+    {
+        $promotion = Promotion::where('uuid', $uuid)->firstOrFail();
+        
+        $updateData = [];
+        
+        if ($promotion->new_department_id) {
+            $updateData['department_id'] = $promotion->new_department_id;
+        }
+        
+        if ($promotion->new_designation_id) {
+            $updateData['designation_id'] = $promotion->new_designation_id;
+        }
+        
+        if ($promotion->new_grade_id) {
+            $updateData['salary_grade_id'] = $promotion->new_grade_id;
+        }
+        
+        if (!empty($updateData)) {
+            Employee::where('id', $promotion->employee_id)->update($updateData);
+        }
+        
+        $promotion->update(['status' => Promotion::STATUS_ACTIVE]);
+    }
+
+    // ===================== EMPLOYEE EXIT / FINAL SETTLEMENT =====================
+
+    public function getEmployeeExits(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = EmployeeExit::with(['employee.profile']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['exit_type'])) {
+            $query->where('exit_type', $filters['exit_type']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('last_working_date', 'desc')->paginate($perPage);
+    }
+
+    public function createEmployeeExit(
+        int $employeeId,
+        string $exitType,
+        string $lastWorkingDate,
+        ?string $noticeDate,
+        ?string $reason,
+        int $userId
+    ): EmployeeExit {
+        $employee = Employee::with('salaryGrade')->findOrFail($employeeId);
+        
+        // Calculate settlement components
+        $salaryAmount = 0;
+        $leaveEncashment = 0;
+        $pfBalance = 0;
+        
+        // Get last month salary
+        $lastPayroll = Payroll::where('employee_id', $employeeId)
+            ->where('status', Payroll::STATUS_PAID)
+            ->orderBy('payroll_year', 'desc')
+            ->orderBy('payroll_month', 'desc')
+            ->first();
+        
+        if ($lastPayroll) {
+            $salaryAmount = $lastPayroll->net_salary;
+        }
+        
+        // Calculate leave encashment
+        $approvedLeaves = Leave::where('employee_id', $employeeId)
+            ->where('status', Leave::STATUS_APPROVED)
+            ->get();
+        
+        foreach ($approvedLeaves as $leave) {
+            if ($leave->leaveType->is_encashable) {
+                $leaveEncashment += $leave->total_days * ($employee->salaryGrade?->basic_salary ?? 0) / 30;
+            }
+        }
+        
+        // Get PF balance
+        $pf = ProvidentFund::where('employee_id', $employeeId)
+            ->where('status', ProvidentFund::STATUS_ACTIVE)
+            ->first();
+        
+        if ($pf) {
+            $pfBalance = $pf->total_balance;
+        }
+        
+        $netPayable = $salaryAmount + $leaveEncashment + $pfBalance;
+
+        return EmployeeExit::create([
+            'uuid' => (string) Str::uuid(),
+            'exit_no' => EmployeeExit::generateExitNo(),
+            'employee_id' => $employeeId,
+            'exit_type' => $exitType,
+            'notice_date' => $noticeDate,
+            'last_working_date' => $lastWorkingDate,
+            'salary_amount' => $salaryAmount,
+            'leave_encashment' => $leaveEncashment,
+            'pf_balance' => $pfBalance,
+            'net_payable' => $netPayable,
+            'status' => EmployeeExit::STATUS_PENDING,
+            'reason' => $reason,
+        ]);
+    }
+
+    public function approveEmployeeExit(string $uuid, int $userId): void
+    {
+        $exit = EmployeeExit::where('uuid', $uuid)->firstOrFail();
+        $exit->update([
+            'status' => EmployeeExit::STATUS_APPROVED,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function processEmployeeExit(string $uuid, int $userId): void
+    {
+        $exit = EmployeeExit::where('uuid', $uuid)->firstOrFail();
+        
+        // Update employee status
+        $employee = Employee::findOrFail($exit->employee_id);
+        
+        $statusMap = [
+            EmployeeExit::TYPE_RESIGNATION => Employee::STATUS_RESIGNED,
+            EmployeeExit::TYPE_TERMINATION => Employee::STATUS_TERMINATED,
+            EmployeeExit::TYPE_RETIREMENT => Employee::STATUS_RETIRED,
+        ];
+        
+        $employee->update(['status' => $statusMap[$exit->exit_type] ?? Employee::STATUS_INACTIVE]);
+        
+        // Close PF account
+        $pf = ProvidentFund::where('employee_id', $exit->employee_id)
+            ->where('status', ProvidentFund::STATUS_ACTIVE)
+            ->first();
+        
+        if ($pf) {
+            $pf->update([
+                'status' => ProvidentFund::STATUS_CLOSED,
+                'closing_date' => now(),
+            ]);
+        }
+        
+        $exit->update([
+            'status' => EmployeeExit::STATUS_PROCESSED,
+            'processed_by' => $userId,
+            'processed_at' => now(),
+        ]);
+    }
+
+    public function payEmployeeExit(string $uuid): void
+    {
+        $exit = EmployeeExit::where('uuid', $uuid)->firstOrFail();
+        $exit->update([
+            'status' => EmployeeExit::STATUS_COMPLETED,
+            'paid_at' => now(),
+        ]);
+    }
+
+    // ===================== PROVIDENT FUND =====================
+
+    public function getProvidentFunds(int $perPage = 50, array $filters = []): LengthAwarePaginator
+    {
+        $query = ProvidentFund::with(['employee.profile']);
+
+        if (!empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    public function createProvidentFund(int $employeeId): ProvidentFund
+    {
+        return ProvidentFund::create([
+            'uuid' => (string) Str::uuid(),
+            'pf_no' => ProvidentFund::generatePFNo(),
+            'employee_id' => $employeeId,
+            'employee_contribution' => 0,
+            'employer_contribution' => 0,
+            'total_contribution' => 0,
+            'interest_earned' => 0,
+            'total_balance' => 0,
+            'withdrawn_amount' => 0,
+            'status' => ProvidentFund::STATUS_ACTIVE,
+            'activation_date' => now(),
+        ]);
+    }
+
+    public function addPFContribution(int $pfId, float $employeeAmount, float $employerAmount, int $month, int $year): void
+    {
+        $pf = ProvidentFund::findOrFail($pfId);
+        
+        // Add contribution record
+        PFContribution::create([
+            'uuid' => (string) Str::uuid(),
+            'pf_id' => $pfId,
+            'contribution_month' => $month,
+            'contribution_year' => $year,
+            'employee_amount' => $employeeAmount,
+            'employer_amount' => $employerAmount,
+            'interest_amount' => 0,
+            'total_amount' => $employeeAmount + $employerAmount,
+        ]);
+        
+        // Update PF balance
+        $pf->addContribution($employeeAmount, $employerAmount);
+    }
+
+    // ===================== INCOME TAX =====================
+
+    public function getTaxSlabs(int $fiscalYear): \Illuminate\Database\Eloquent\Collection
+    {
+        return TaxSlab::where('fiscal_year', $fiscalYear)
+            ->where('is_active', true)
+            ->orderBy('min_income', 'asc')
+            ->get();
+    }
+
+    public function createTaxSlab(array $data): TaxSlab
+    {
+        return TaxSlab::create([
+            'uuid' => (string) Str::uuid(),
+            'name' => $data['name'],
+            'fiscal_year' => $data['fiscal_year'],
+            'min_income' => $data['min_income'],
+            'max_income' => $data['max_income'] ?? null,
+            'rate_percent' => $data['rate_percent'],
+            'fixed_amount' => $data['fixed_amount'] ?? 0,
+            'is_active' => true,
+            'description' => $data['description'] ?? null,
+        ]);
+    }
+
+    public function calculateEmployeeTax(int $employeeId, int $fiscalYear): EmployeeTaxRecord
+    {
+        $employee = Employee::with('salaryGrade')->findOrFail($employeeId);
+        
+        // Get all payrolls for the fiscal year
+        $payrolls = Payroll::where('employee_id', $employeeId)
+            ->whereYear('payroll_year', $fiscalYear)
+            ->get();
+        
+        $grossSalary = $payrolls->sum('gross_salary');
+        
+        return EmployeeTaxRecord::create([
+            'uuid' => (string) Str::uuid(),
+            'employee_id' => $employeeId,
+            'fiscal_year' => $fiscalYear,
+            'gross_salary' => $grossSalary,
+            'exempted_allowances' => 0,
+            'taxable_income' => $grossSalary,
+            'annual_tax' => 0,
+            'monthly_tax' => 0,
+            'tax_paid' => $payrolls->sum('tax_amount'),
+            'adjustment' => 0,
+            'remaining_tax' => 0,
+            'status' => EmployeeTaxRecord::STATUS_PENDING,
+        ]);
+    }
+
+    // ===================== EMPLOYEE ATTENDANCE =====================
+
+    public function getEmployeeAttendances(int $employeeId, string $startDate, string $endDate): \Illuminate\Database\Eloquent\Collection
+    {
+        return EmployeeAttendance::where('employee_id', $employeeId)
+            ->whereBetween('attendance_date', [$startDate, $endDate])
+            ->orderBy('attendance_date')
+            ->get();
+    }
+
+    public function markAttendance(
+        int $employeeId,
+        string $date,
+        string $status,
+        ?string $checkIn = null,
+        ?string $checkOut = null
+    ): EmployeeAttendance {
+        return EmployeeAttendance::updateOrCreate(
+            [
+                'employee_id' => $employeeId,
+                'attendance_date' => $date,
+            ],
+            [
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'status' => $status,
+            ]
+        );
+    }
+
+    // ===================== LEAVE BALANCE =====================
+
+    public function initializeLeaveBalances(int $employeeId, int $fiscalYear): void
+    {
+        $employee = Employee::findOrFail($employeeId);
+        EmployeeLeaveBalance::initializeForEmployee($employee, $fiscalYear);
+    }
+
+    public function getLeaveBalances(int $employeeId, int $fiscalYear): \Illuminate\Database\Eloquent\Collection
+    {
+        return EmployeeLeaveBalance::where('employee_id', $employeeId)
+            ->where('fiscal_year', $fiscalYear)
+            ->with('leaveType')
+            ->get();
     }
 }

@@ -245,3 +245,167 @@ export const HOLIDAY_TYPES: Record<HolidayType, string> = {
   institution: 'Institution Holiday',
   emergency: 'Emergency Holiday',
 };
+
+// Additional HR Types
+export interface AdvanceSalary {
+  id: string;
+  advance_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  requested_amount: number;
+  approved_amount: number;
+  monthly_deduction: number;
+  installment_count: number;
+  paid_installments: number;
+  remaining_amount: number;
+  request_date: string;
+  deduction_start_date: string;
+  status: 'pending' | 'approved' | 'active' | 'completed' | 'rejected' | 'cancelled';
+  approved_at?: string;
+  purpose?: string;
+}
+
+export interface Bonus {
+  id: string;
+  bonus_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  bonus_type: BonusType;
+  name: string;
+  amount: number;
+  percentage?: number;
+  bonus_date: string;
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  approved_at?: string;
+  paid_at?: string;
+}
+
+export interface Increment {
+  id: string;
+  increment_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  increment_type: IncrementType;
+  previous_basic: number;
+  new_basic: number;
+  increment_amount: number;
+  percentage: number;
+  effective_date: string;
+  status: 'pending' | 'approved' | 'active' | 'cancelled';
+  approved_at?: string;
+  reason?: string;
+}
+
+export interface Promotion {
+  id: string;
+  promotion_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  new_designation?: { id: string; name: string };
+  new_department?: { id: string; name: string };
+  promotion_date: string;
+  effective_date: string;
+  previous_basic: number;
+  new_basic: number;
+  status: 'pending' | 'approved' | 'active' | 'cancelled';
+  approved_at?: string;
+  reason?: string;
+}
+
+export interface EmployeeExit {
+  id: string;
+  exit_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  exit_type: ExitType;
+  last_working_date: string;
+  salary_amount: number;
+  leave_encashment: number;
+  pf_balance: number;
+  net_payable: number;
+  status: 'pending' | 'approved' | 'processed' | 'completed';
+  approved_at?: string;
+  processed_at?: string;
+  paid_at?: string;
+  reason?: string;
+}
+
+export interface ProvidentFund {
+  id: string;
+  pf_no: string;
+  employee_id?: number;
+  employee?: EmployeeInfo;
+  employee_contribution: number;
+  employer_contribution: number;
+  total_contribution: number;
+  interest_earned: number;
+  total_balance: number;
+  withdrawn_amount: number;
+  status: 'active' | 'closed' | 'frozen';
+  activation_date: string;
+  closing_date?: string;
+}
+
+export interface TaxSlab {
+  id: string;
+  name: string;
+  fiscal_year: number;
+  min_income: number;
+  max_income?: number;
+  rate_percent: number;
+  fixed_amount: number;
+  is_active: boolean;
+  description?: string;
+}
+
+export interface EmployeeTaxRecord {
+  id: string;
+  employee_id?: number;
+  fiscal_year: number;
+  gross_salary: number;
+  exempted_allowances: number;
+  taxable_income: number;
+  annual_tax: number;
+  monthly_tax: number;
+  tax_paid: number;
+  adjustment: number;
+  remaining_tax: number;
+  status: 'pending' | 'calculated' | 'adjusted' | 'paid';
+}
+
+// Enums for new types
+export type BonusType = 'festival' | 'performance' | 'yearly' | 'special';
+export type IncrementType = 'annual' | 'performance' | 'promotion' | 'manual';
+export type ExitType = 'resignation' | 'termination' | 'retirement' | 'death';
+
+export const BONUS_TYPES: Record<BonusType, string> = {
+  festival: 'Festival Bonus',
+  performance: 'Performance Bonus',
+  yearly: 'Yearly Bonus',
+  special: 'Special Bonus',
+};
+
+export const INCREMENT_TYPES: Record<IncrementType, string> = {
+  annual: 'Annual Increment',
+  performance: 'Performance Increment',
+  promotion: 'Promotion Increment',
+  manual: 'Manual Increment',
+};
+
+export const EXIT_TYPES: Record<ExitType, string> = {
+  resignation: 'Resignation',
+  termination: 'Termination',
+  retirement: 'Retirement',
+  death: 'Death',
+};
+
+// Paginated Response
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}

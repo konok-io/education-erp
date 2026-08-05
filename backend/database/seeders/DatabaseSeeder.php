@@ -20,6 +20,11 @@ class DatabaseSeeder extends Seeder
             CampusSeeder::class,
             AcademicLevelSeeder::class,
             DepartmentSeeder::class,
+            EmploymentTypeSeeder::class,
+            DesignationSeeder::class,
+            SalaryGradeSeeder::class,
+            LeaveTypeSeeder::class,
+            HolidaySeeder::class,
             SettingSeeder::class,
             SuperAdminSeeder::class,
         ]);
