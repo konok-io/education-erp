@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('doi')->nullable()->unique();
             $table->text('acknowledgments')->nullable();
             $table->text('references')->nullable();
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             
