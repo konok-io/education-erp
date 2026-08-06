@@ -43,7 +43,7 @@ Route::prefix('inventory')->middleware(['auth:sanctum'])->group(function () {
 
     // ===================== STOCK TRANSFER =====================
     Route::prefix('transfers')->group(function () {
-        Route::get('/', [InventoryController::class, 'index'])->name('inventory.transfers');
+        Route::get('/', [InventoryController::class, 'getTransfers'])->name('inventory.transfers');
         Route::post('/', [InventoryController::class, 'transferStock'])->name('inventory.transfers.store');
     });
 

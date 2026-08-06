@@ -139,4 +139,22 @@ class InventoryController extends Controller
 
         return response()->json(['data' => $locations]);
     }
+
+    public function getTransfers(Request $request): JsonResponse
+    {
+        $perPage = (int) $request->get('per_page', 20);
+        $filters = $request->only(['from_location_id', 'to_location_id', 'status', 'search']);
+
+        $transfers = $this->inventoryService->getTransfers($perPage, $filters);
+
+        return response()->json([
+            'data' => $transfers->items(),
+            'meta' => [
+                'current_page' => $transfers->currentPage(),
+                'last_page' => $transfers->lastPage(),
+                'per_page' => $transfers->perPage(),
+                'total' => $transfers->total(),
+            ],
+        ]);
+    }
 }

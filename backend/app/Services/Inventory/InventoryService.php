@@ -20,6 +20,7 @@ use App\Models\Inventory\PurchaseRequestItem;
 use App\Models\Inventory\StockMovement;
 use App\Models\Inventory\Supplier;
 use App\Models\Inventory\Warehouse;
+use App\Models\Inventory\StockTransfer;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -535,5 +536,54 @@ class InventoryService
             'opening_stock' => $movements->first()?->opening_stock ?? 0,
             'closing_stock' => Product::find($productId)->current_stock,
         ];
+    }
+
+    // ===================== TRANSFER METHODS =====================
+
+    public function getTransfers(int $perPage = 20, array $filters = []): LengthAwarePaginator
+    {
+        $query = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'requestedBy']);
+
+        if (!empty($filters['from_location_id'])) {
+            $query->where('from_warehouse_id', $filters['from_location_id']);
+        }
+
+        if (!empty($filters['to_location_id'])) {
+            $query->where('to_warehouse_id', $filters['to_location_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('transfer_no', 'like', "%{$filters['search']}%")
+                  ->orWhereHas('fromWarehouse', fn($wq) => $wq->where('name', 'like', "%{$filters['search']}%"))
+                  ->orWhereHas('toWarehouse', fn($wq) => $wq->where('name', 'like', "%{$filters['search']}%"));
+            });
+        }
+
+        return $query->orderByDesc('created_at')->paginate($perPage);
+    }
+
+    public function createTransfer(array $data): StockTransfer
+    {
+        $data['transfer_no'] = StockTransfer::generateTransferNo();
+        $data['requested_by'] = auth()->id();
+
+        return StockTransfer::create($data);
+    }
+
+    public function approveTransfer(StockTransfer $transfer, int $userId): StockTransfer
+    {
+        $transfer->approve($userId);
+        return $transfer->fresh();
+    }
+
+    public function completeTransfer(StockTransfer $transfer, int $userId): StockTransfer
+    {
+        $transfer->complete($userId);
+        return $transfer->fresh();
     }
 }
