@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('research_teams', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained('research_projects')->cascadeOnDelete();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('member_name');
             $table->string('member_email');

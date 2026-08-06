@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('research_milestones', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained('research_projects')->cascadeOnDelete();
             $table->string('milestone_name');
             $table->text('description')->nullable();
             $table->integer('order')->default(1);
