@@ -13,10 +13,10 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('promotion_no')->unique();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('previous_department_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('new_department_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('previous_designation_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('new_designation_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('previous_department_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->foreignId('new_department_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->foreignId('previous_designation_id')->nullable()->constrained('designations')->nullOnDelete();
+            $table->foreignId('new_designation_id')->nullable()->constrained('designations')->nullOnDelete();
             $table->foreignId('previous_grade_id')->nullable()->constrained('salary_grades')->nullOnDelete();
             $table->foreignId('new_grade_id')->nullable()->constrained('salary_grades')->nullOnDelete();
             $table->decimal('previous_basic', 12, 2)->nullable();
