@@ -8,24 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('shifts', function (Blueprint $table) {
+        Schema::create('employee_shifts', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique();
-            $table->string('name');
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->integer('grace_period_minutes')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->text('description')->nullable();
+            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('shift_id')->constrained()->cascadeOnDelete();
+            $table->date('effective_date');
+            $table->date('end_date')->nullable();
             $table->timestamps();
-            $table->softDeletes();
-            
-            $table->index('is_active');
+
+            $table->unique(['employee_id', 'shift_id', 'effective_date']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('shifts');
+        Schema::dropIfExists('employee_shifts');
     }
 };
