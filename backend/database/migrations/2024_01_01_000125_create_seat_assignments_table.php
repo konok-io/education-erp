@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('seat_plan_id')->nullable()->constrained('seat_plans')->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('roll_number', 50)->nullable();
             $table->string('seat_number', 20);

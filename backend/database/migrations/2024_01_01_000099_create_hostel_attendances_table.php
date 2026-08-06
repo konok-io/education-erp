@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('hostel_attendances', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('building_id')->nullable()->constrained('hostel_buildings')->nullOnDelete();
             $table->date('date');
             $table->enum('status', ['present', 'absent', 'leave', 'late', 'night_out'])->default('present');

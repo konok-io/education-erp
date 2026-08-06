@@ -40,7 +40,7 @@ return new class extends Migration
             $table->date('last_followup')->nullable();
             $table->date('next_followup')->nullable();
             $table->enum('status', ['active', 'converted', 'rejected', 'lost'])->default('active');
-            $table->foreignId('converted_to_student_id')->nullable()->unique()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('converted_to_student_id')->nullable()->unique();
             $table->date('converted_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

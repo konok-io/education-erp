@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('exam_id')->nullable()->constrained('exams')->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('roll_number', 50)->nullable();
             $table->enum('status', ['present', 'absent', 'late', 'disqualified'])->default('present');

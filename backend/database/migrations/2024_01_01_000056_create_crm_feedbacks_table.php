@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('feedback_no', 50)->unique();
             $table->foreignId('contact_id')->nullable()->constrained('crm_contacts')->nullOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('employee_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->foreignId('ticket_id')->nullable()->constrained('crm_tickets')->nullOnDelete();
             $table->enum('feedback_type', [

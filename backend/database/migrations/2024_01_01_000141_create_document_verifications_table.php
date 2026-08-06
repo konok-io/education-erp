@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('verification_no', 50)->unique();
             $table->foreignId('certificate_id')->nullable()->constrained('certificates')->nullOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('applicant_name')->nullable();
             $table->string('applicant_email')->nullable();
             $table->string('applicant_phone', 20)->nullable();

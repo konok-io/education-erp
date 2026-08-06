@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('request_no', 50)->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('student_email')->nullable();
             $table->string('student_phone', 20)->nullable();

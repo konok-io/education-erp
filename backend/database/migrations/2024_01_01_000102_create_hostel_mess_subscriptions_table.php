@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('subscription_no', 50)->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('building_id')->nullable()->constrained('hostel_buildings')->nullOnDelete();
             $table->foreignId('mess_plan_id')->nullable()->constrained('hostel_mess_plans')->nullOnDelete();
             $table->date('start_date');

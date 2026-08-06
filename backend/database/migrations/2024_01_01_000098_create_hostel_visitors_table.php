@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('visitor_name', 150);
             $table->string('relation', 100)->nullable();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('building_id')->nullable()->constrained('hostel_buildings')->nullOnDelete();
             $table->string('id_proof', 100)->nullable();
             $table->string('phone', 20)->nullable();

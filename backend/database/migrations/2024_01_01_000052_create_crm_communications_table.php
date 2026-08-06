@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('communication_no', 50)->unique();
             $table->foreignId('contact_id')->nullable()->constrained('crm_contacts')->nullOnDelete();
             $table->foreignId('lead_id')->nullable()->constrained('crm_leads')->nullOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('campaign_id')->nullable()->constrained('crm_campaigns')->nullOnDelete();
             $table->enum('channel', ['email', 'sms', 'whatsapp', 'push', 'phone'])->default('email');
             $table->enum('direction', ['inbound', 'outbound'])->default('outbound');

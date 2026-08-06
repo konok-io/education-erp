@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('certificate_code', 50)->nullable();
             $table->foreignId('template_id')->nullable()->constrained('certificate_templates')->nullOnDelete();
             $table->enum('certificate_type', ['testimonial', 'character', 'transfer', 'experience', 'bonafide', 'graduation', 'transcript', 'other'])->default('other');
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('student_name_bn')->nullable();
             $table->string('father_name')->nullable();

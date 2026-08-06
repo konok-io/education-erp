@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('fee_no', 50)->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('building_id')->nullable()->constrained('hostel_buildings')->nullOnDelete();
             $table->string('fee_head', 100);
             $table->decimal('amount', 10, 2)->default(0);

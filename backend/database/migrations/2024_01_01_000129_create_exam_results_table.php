@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('result_no', 50)->unique();
             $table->foreignId('exam_id')->nullable()->constrained('exams')->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('roll_number', 50)->nullable();
             $table->decimal('obtained_marks', 8, 2)->default(0);

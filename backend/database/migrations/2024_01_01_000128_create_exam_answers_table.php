@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('exam_id')->nullable()->constrained('exams')->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('question_id')->nullable()->constrained('questions')->cascadeOnDelete();
             $table->text('answer')->nullable();
             $table->text('correct_answer')->nullable();

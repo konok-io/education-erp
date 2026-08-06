@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('transport_attendances', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('route_id')->nullable()->constrained('transport_routes')->nullOnDelete();
             $table->foreignId('vehicle_id')->nullable()->constrained('transport_vehicles')->nullOnDelete();
             $table->date('date');

@@ -12,10 +12,10 @@ return new class extends Migration
             $table->id();
             $table->uuid('student_uuid')->unique();
             $table->string('student_id')->unique();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('campus_id')->nullable()->constrained('campuses')->nullOnDelete();
-            $table->foreignId('academic_level_id')->nullable()->constrained('academic_levels')->nullOnDelete();
-            $table->foreignId('section_id')->nullable()->constrained('sections')->nullOnDelete();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('campus_id')->nullable();
+            $table->unsignedBigInteger('academic_level_id')->nullable();
+            $table->unsignedBigInteger('section_id')->nullable();
             $table->string('first_name');
             $table->string('last_name');
             $table->date('date_of_birth')->nullable();

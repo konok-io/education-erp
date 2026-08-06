@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('mother_name')->nullable();
             $table->string('photo')->nullable();
             $table->string('nid', 50)->nullable();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->string('roll_number', 50)->nullable();
             $table->string('registration_no', 50)->nullable();
             $table->year('admission_year')->nullable();

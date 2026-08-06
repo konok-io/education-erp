@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('survey_id')->constrained('crm_surveys')->cascadeOnDelete();
             $table->foreignId('respondent_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('employee_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->json('responses'); // {question_id: answer}
             $table->decimal('total_score', 5, 2)->nullable();

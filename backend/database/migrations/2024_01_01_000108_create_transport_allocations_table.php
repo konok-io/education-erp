@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('allocation_no', 50)->unique();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('student_id')->nullable();
             $table->foreignId('route_id')->nullable()->constrained('transport_routes')->nullOnDelete();
             $table->foreignId('pickup_stop_id')->nullable()->constrained('transport_stops')->nullOnDelete();
             $table->foreignId('drop_stop_id')->nullable()->constrained('transport_stops')->nullOnDelete();

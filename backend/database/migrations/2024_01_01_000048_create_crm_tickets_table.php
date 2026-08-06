@@ -46,7 +46,7 @@ return new class extends Migration
             $table->json('attachments')->nullable();
             $table->json('tags')->nullable();
             $table->foreignId('parent_ticket_id')->nullable()->constrained('crm_tickets')->nullOnDelete();
-            $table->foreignId('related_student_id')->nullable()->constrained('students')->nullOnDelete();
+            $table->unsignedBigInteger('related_student_id')->nullable();
             $table->foreignId('related_employee_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->timestamp('first_response_at')->nullable();
             $table->timestamp('resolved_at')->nullable();
