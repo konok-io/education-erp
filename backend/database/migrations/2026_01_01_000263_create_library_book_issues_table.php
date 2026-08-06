@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('issue_number')->unique();
-            $table->foreignId('inventory_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('inventory_id')->nullable()->constrained('library_inventory')->nullOnDelete();
             $table->foreignId('book_id')->constrained()->cascadeOnDelete();
             $table->foreignId('member_id')->constrained('library_members')->cascadeOnDelete();
             $table->date('issue_date');
