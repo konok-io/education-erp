@@ -12,12 +12,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasUuid, SoftDeletes, LogsActivity;
+    use HasApiTokens, HasFactory, Notifiable, HasUuid, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -53,12 +51,6 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'password' => 'hashed',
     ];
-
-    /**
-     * Activity log options.
-     */
-    protected $logOnlyDirty = true;
-    protected $logAttributesToIgnore = ['password', 'remember_token'];
 
     /**
      * Scope to exclude super admin.

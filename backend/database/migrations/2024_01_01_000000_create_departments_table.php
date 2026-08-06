@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('code', 50)->unique();
             $table->text('description')->nullable();
-            $table->foreignId('head_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->foreignId('parent_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->integer('level')->default(1);
             $table->enum('status', ['active', 'inactive'])->default('active');
