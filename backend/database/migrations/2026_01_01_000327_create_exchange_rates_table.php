@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             
-            $table->index(['base_currency', 'target_currency', 'effective_date']);
+            $table->index(['base_currency', 'target_currency', 'effective_date'], 'exchange_rates_currency_date_idx');
             $table->index('is_active');
         });
     }
