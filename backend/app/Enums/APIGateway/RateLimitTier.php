@@ -4,22 +4,6 @@ declare(strict_types=1);
 
 namespace App\Enums\APIGateway;
 
-enum EndpointStatus: string
-{
-    case ACTIVE = 'active';
-    case INACTIVE = 'inactive';
-    case DEPRECATED = 'deprecated';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::ACTIVE => 'Active',
-            self::INACTIVE => 'Inactive',
-            self::DEPRECATED => 'Deprecated',
-        };
-    }
-}
-
 enum RateLimitTier: string
 {
     case FREE = 'free';
@@ -48,19 +32,5 @@ enum RateLimitTier: string
             self::PROFESSIONAL => 5000,
             self::ENTERPRISE => 60000,
         };
-    }
-}
-
-enum HTTPMethod: string
-{
-    case GET = 'GET';
-    case POST = 'POST';
-    case PUT = 'PUT';
-    case PATCH = 'PATCH';
-    case DELETE = 'DELETE';
-
-    public function label(): string
-    {
-        return $this->value;
     }
 }

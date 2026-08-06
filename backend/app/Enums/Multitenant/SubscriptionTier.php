@@ -4,44 +4,6 @@ declare(strict_types=1);
 
 namespace App\Enums\Multitenant;
 
-enum TenantStatus: string
-{
-    case ACTIVE = 'active';
-    case SUSPENDED = 'suspended';
-    case PENDING = 'pending';
-    case CANCELLED = 'cancelled';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::ACTIVE => 'Active',
-            self::SUSPENDED => 'Suspended',
-            self::PENDING => 'Pending',
-            self::CANCELLED => 'Cancelled',
-        };
-    }
-}
-
-enum SubscriptionStatus: string
-{
-    case TRIAL = 'trial';
-    case ACTIVE = 'active';
-    case PAUSED = 'paused';
-    case EXPIRED = 'expired';
-    case CANCELLED = 'cancelled';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::TRIAL => 'Trial',
-            self::ACTIVE => 'Active',
-            self::PAUSED => 'Paused',
-            self::EXPIRED => 'Expired',
-            self::CANCELLED => 'Cancelled',
-        };
-    }
-}
-
 enum SubscriptionTier: string
 {
     case STARTER = 'starter';
