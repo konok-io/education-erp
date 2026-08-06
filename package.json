@@ -1,0 +1,12 @@
+{
+  "name": "education-erp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "cd backend && npm install && npm run dev",
+    "build": "cd backend && npm run build",
+    "install:all": "cd backend && composer install && npm install",
+    "setup": "cd backend && composer install && npm install && php artisan key:generate"
+  }
+}
