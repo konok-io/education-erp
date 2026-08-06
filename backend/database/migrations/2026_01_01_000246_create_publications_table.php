@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('abstract')->nullable();
             $table->string('publication_type', 50);
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->string('journal_name')->nullable();
             $table->string('journal_issn')->nullable();
             $table->string('publisher')->nullable();
