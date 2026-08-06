@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             HrmSeeder::class, // Phase 034 - HRM Seeder
             CrmSeeder::class, // Phase 035 - CRM Seeder
             InventorySeeder::class, // Phase 036 - Asset/Inventory Seeder
+            LibrarySeeder::class, // Phase 037 - Library Seeder
             BookCategorySeeder::class,
             SubjectSeeder::class,
             ProductCategorySeeder::class,
