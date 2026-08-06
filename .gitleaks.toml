@@ -1,0 +1,96 @@
+[title]
+path = .gitleaks.toml
+description = "Gitleaks configuration file"
+punctuation = [":"]
+category = "config"
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub token"
+regex = '''ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{22,252}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+id = "gitlab-token"
+description = "GitLab Personal Access Token"
+regex = '''glpat-[a-zA-Z0-9\-]{20}'''
+tags = ["key", "GitLab"]
+
+[[rules]]
+id = "azure-devops-token"
+description = "Azure DevOps Personal Access Token"
+regex = '''[a-zA-Z0-9]{52}'''
+tags = ["key", "Azure"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9a-zA-Z]{10,48}'''
+tags = ["key", "Slack"]
+
+[[rules]]
+id = "stripe-api-key"
+description = "Stripe API Key"
+regex = '''sk_live_[0-9a-zA-Z]{24}'''
+tags = ["key", "Stripe"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|access[_-]?key|secret[_-]?key|auth[_-]?token)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9]{16,64}['\"]?'''
+tags = ["key", "API"]
+
+[[rules]]
+id = "database-url"
+description = "Database Connection String"
+regex = '''(?i)(mysql|postgres|postgresql|mongodb|redis)://[a-zA-Z0-9]+:[a-zA-Z0-9]+@[a-zA-Z0-9.-]+:[0-9]+/[a-zA-Z0-9_]+'''
+tags = ["secret", "database"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[a-zA-Z0-9]{10,}\.eyJ[a-zA-Z0-9]{10,}\.[a-zA-Z0-9_-]{10,}'''
+tags = ["token", "JWT"]
+
+[[rules]]
+id = "env-secret"
+description = "Environment Variable Secret"
+regex = '''(?i)(SECRET|PASSWORD|TOKEN|API[_-]?KEY|PRIVATE[_-]?KEY)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9]{8,64}['\"]?'''
+tags = ["secret", "env"]
+
+[allowlist]
+description = "Allowlist"
+paths = [
+    '''node_modules/.*''',
+    '''vendor/.*''',
+    '''\.git/.*''',
+    '''\.gradle/.*''',
+    '''coverage/.*''',
+    '''storage/debugbar/.*''',
+    '''\.env\.example''',
+    '''\.env\.local''',
+    '''\.env\.test''',
+]
+
+[allowlist]
+commits = [
+    "0000000000000000000000000000000000000000"
+]

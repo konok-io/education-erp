@@ -1,0 +1,212 @@
+stages:
+  - lint
+  - test
+  - build
+  - security
+  - deploy
+  - notify
+
+variables:
+  PHP_VERSION: "8.2"
+  NODE_VERSION: "20"
+  DOCKER_DRIVER: overlay2
+  COMPOSER_AUTH: $COMPOSER_AUTH
+
+before_script:
+  - export TERM=xterm
+  - date
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - backend/vendor/
+    - frontend/node_modules/
+
+php-lint:
+  stage: lint
+  image: php:${PHP_VERSION}-cli
+  services:
+    - docker:dind
+  script:
+    - cd backend
+    - composer install --no-interaction
+    - composer phpcs
+    - composer phpstan
+  allow_failure: false
+
+frontend-lint:
+  stage: lint
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run lint
+    - npm run type-check
+  allow_failure: false
+
+php-test:
+  stage: test
+  image: php:${PHP_VERSION}-cli
+  services:
+    - mysql:8.0
+  variables:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_DATABASE: education_erp_test
+  script:
+    - cd backend
+    - composer install --no-interaction
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan migrate
+    - composer test
+  coverage: '/Coverage: \d+\.\d+%/'
+  allow_failure: false
+
+frontend-test:
+  stage: test
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run test -- --coverage --ci
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  allow_failure: false
+
+docker-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+    - develop
+    - tags
+
+security-secrets:
+  stage: security
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git gitleaks
+  script:
+    - gitleaks detect --source . --verbose
+  allow_failure: true
+
+security-sast:
+  stage: security
+  image: php:${PHP_VERSION}-cli
+  script:
+    - cd backend
+    - composer install --no-interaction
+    - composer psalm
+    - composer phpstan
+  allow_failure: true
+
+security-sca:
+  stage: security
+  image: php:${PHP_VERSION}-cli
+  script:
+    - cd backend
+    - composer audit --no-interaction
+  allow_failure: true
+
+deploy-development:
+  stage: deploy
+  image: alpine/helm:latest
+  environment:
+    name: development
+    url: https://dev.education-erp.example.com
+  script:
+    - kubectl config use-context $KUBERNETES_CONTEXT_DEV
+    - helm upgrade --install education-erp ./helm/education-erp
+      --namespace development
+      --create-namespace
+      --values ./helm/education-erp/values-dev.yaml
+      --set image.tag=$CI_COMMIT_SHA
+      --wait --timeout 10m
+  only:
+    - develop
+  when: manual
+
+deploy-qa:
+  stage: deploy
+  image: alpine/helm:latest
+  environment:
+    name: qa
+    url: https://qa.education-erp.example.com
+  script:
+    - kubectl config use-context $KUBERNETES_CONTEXT_QA
+    - helm upgrade --install education-erp ./helm/education-erp
+      --namespace qa
+      --create-namespace
+      --values ./helm/education-erp/values-qa.yaml
+      --set image.tag=$CI_COMMIT_SHA
+      --wait --timeout 10m
+  only:
+    - develop
+  when: manual
+
+deploy-staging:
+  stage: deploy
+  image: alpine/helm:latest
+  environment:
+    name: staging
+    url: https://staging.education-erp.example.com
+  script:
+    - kubectl config use-context $KUBERNETES_CONTEXT_STAGING
+    - helm upgrade --install education-erp ./helm/education-erp
+      --namespace staging
+      --create-namespace
+      --values ./helm/education-erp/values-staging.yaml
+      --set image.tag=$CI_COMMIT_SHA
+      --wait --timeout 15m
+  only:
+    - main
+  when: manual
+
+deploy-production:
+  stage: deploy
+  image: alpine/helm:latest
+  environment:
+    name: production
+    url: https://education-erp.example.com
+  script:
+    - kubectl config use-context $KUBERNETES_CONTEXT_PROD
+    - helm upgrade --install education-erp ./helm/education-erp
+      --namespace production
+      --create-namespace
+      --values ./helm/education-erp/values-production.yaml
+      --set image.tag=$CI_COMMIT_SHA
+      --wait --timeout 20m
+  only:
+    - tags
+  when: manual
+
+notification-success:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK_URL" -H 'Content-type: application/json' \
+        --data '{"text": "Deployment successful: '"$CI_COMMIT_REF_NAME"' - '"$CI_COMMIT_SHA"'"}'
+  only:
+    - main
+    - tags
+  when: on_success
+
+notification-failure:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK_URL" -H 'Content-type: application/json' \
+        --data '{"text": "Deployment failed: '"$CI_COMMIT_REF_NAME"' - '"$CI_COMMIT_SHA"'"}'
+  only:
+    - main
+    - develop
+  when: on_failure

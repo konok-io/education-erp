@@ -1,0 +1,362 @@
+name: Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (major.minor.patch)'
+        required: true
+        type: string
+      release_type:
+        description: 'Release Type'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - rc
+          - lts
+          - hotfix
+      changelog:
+        description: 'Changelog (JSON array of changes)'
+        required: false
+        type: string
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+env:
+  PHP_VERSION: '8.2'
+
+jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_type: ${{ inputs.release_type || 'patch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event.inputs.version }}" != "" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Create Release Data
+        run: |
+          cat << EOF > release-data.json
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "type": "${{ inputs.release_type || 'patch' }}",
+            "changelog": ${{ inputs.changelog || '[]' }},
+            "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+      - name: Upload Release Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-data
+          path: release-data.json
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: ${{ !inputs.skip_tests }}
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: education_erp_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, curl, zip, gd, mysql, pdo
+
+      - name: Install Dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copy Environment
+        working-directory: backend
+        run: cp .env.example .env
+
+      - name: Generate Keys
+        working-directory: backend
+        run: |
+          php artisan key:generate
+          php artisan jwt:secret --force
+
+      - name: Run Migrations
+        working-directory: backend
+        run: |
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS education_erp_test;"
+          php artisan migrate --force
+
+      - name: Run PHPUnit
+        working-directory: backend
+        run: composer test
+
+      - name: Run Frontend Tests
+        working-directory: frontend
+        run: npm ci && npm run test -- --ci
+
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [prepare, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Backend
+        working-directory: backend
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan event:cache
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Create Release Bundle
+        run: |
+          mkdir -p release
+          cp -r backend/bootstrap/cache/config.php release/
+          cp -r backend/bootstrap/cache/routes.php release/
+          cp -r frontend/dist release/
+          cp -r backend/vendor release/
+          tar -czf education-erp-${{ needs.prepare.outputs.version }}.tar.gz -C release .
+
+      - name: Upload Release Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: education-erp-${{ needs.prepare.outputs.version }}.tar.gz
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [prepare, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Security Checks
+        run: |
+          echo "Running security scans..."
+          # Add your security scanning commands here
+          # - SAST with Psalm/PHPStan
+          # - Dependency audit
+          # - Secret scanning
+          # - Container scanning
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image-name: '${{ secrets.REGISTRY }}/education-erp:${{ needs.prepare.outputs.version }}'
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build, security-scan]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: .
+
+      - name: Download Release Data
+        uses: actions/download-artifact@v4
+        with:
+          name: release-data
+          path: .
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Generate changelog from git commits
+          CHANGELOG=$(git log --oneline --pretty=format:'%h %s' ${{ github.event.pull_request.base.sha || 'HEAD~20' }}..HEAD 2>/dev/null || echo "- Initial release")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: Release v${{ needs.prepare.outputs.version }}
+          body: |
+            ## Release Notes
+
+            **Version:** ${{ needs.prepare.outputs.version }}
+            **Type:** ${{ needs.prepare.outputs.release_type }}
+
+            ### Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### Features
+            - Feature 1
+            - Feature 2
+
+            ### Bug Fixes
+            - Bug fix 1
+
+            ### Breaking Changes
+            - None
+
+            ### Upgrade Guide
+            Please follow the standard upgrade procedure.
+
+            ### SHA256 Checksum
+            ```
+            $(sha256sum education-erp-${{ needs.prepare.outputs.version }}.tar.gz)
+            ```
+          draft: false
+          prerelease: ${{ needs.prepare.outputs.release_type == 'rc' || needs.prepare.outputs.release_type == 'alpha' || needs.prepare.outputs.release_type == 'beta' }}
+          files: |
+            education-erp-${{ needs.prepare.outputs.version }}.tar.gz
+            sbom.spdx.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-artifacts:
+    name: Publish Artifacts
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: .
+
+      - name: Push to Container Registry
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY }}/education-erp:${{ needs.prepare.outputs.version }}
+            ${{ secrets.REGISTRY }}/education-erp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Publish to npm
+        if: false  # Set to true if you have an npm package
+        run: |
+          echo "Publishing to npm..."
+
+      - name: Publish Release Notes
+        run: |
+          echo "Publishing release notes..."
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [create-release, publish-artifacts]
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "New release published: v${{ needs.prepare.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*New Release Published*\nVersion: `v${{ needs.prepare.outputs.version }}`\nType: `${{ needs.prepare.outputs.release_type }}`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "View Release"},
+                      "url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.prepare.outputs.version }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    environment: production
+    if: ${{ needs.create-release.outputs.release_type != 'hotfix' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy with Helm
+        run: |
+          echo "Deploying v${{ needs.prepare.outputs.version }} to production..."
+          # helm upgrade --install education-erp ./helm/education-erp \
+          #   --namespace production \
+          #   --set image.tag=${{ needs.prepare.outputs.version }}

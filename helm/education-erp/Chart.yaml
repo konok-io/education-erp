@@ -1,0 +1,36 @@
+apiVersion: v2
+name: education-erp
+description: Education ERP Helm Chart
+type: application
+version: 1.0.0
+appVersion: "3.0"
+keywords:
+  - education
+  - erp
+  - laravel
+  - php
+maintainers:
+  - name: Education ERP Team
+    email: devops@education-erp.example.com
+
+dependencies:
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: nginx-ingress
+    version: "9.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: nginx.enabled
+  - name: cert-manager
+    version: "1.x.x"
+    repository: "https://charts.jetstack.io/charts"
+    condition: certManager.enabled
+
+annotations:
+  category: Education
+  licenses: MIT

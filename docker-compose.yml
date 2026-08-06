@@ -1,0 +1,139 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: education-erp-app
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - app-storage:/app/storage
+      - app-bootstrap:/app/bootstrap/cache
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=base64:generated
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=education_erp
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - CACHE_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+    networks:
+      - education-erp-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: education-erp-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    networks:
+      - education-erp-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: education-erp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: education_erp
+      MYSQL_ROOT_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - education-erp-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: education-erp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - education-erp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: education-erp-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+      - frontend
+    networks:
+      - education-erp-network
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: education-erp-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./backend:/app
+      - app-storage:/app/storage
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=production
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    networks:
+      - education-erp-network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: education-erp-scheduler
+    restart: unless-stopped
+    command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=production
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    networks:
+      - education-erp-network
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+  app-storage:
+    driver: local
+  app-bootstrap:
+    driver: local
+
+networks:
+  education-erp-network:
+    driver: bridge

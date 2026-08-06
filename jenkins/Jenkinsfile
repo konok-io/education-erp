@@ -1,0 +1,255 @@
+@Library('shared-library') _
+
+pipeline {
+    agent any
+    
+    environment {
+        PHP_VERSION = '8.2'
+        NODE_VERSION = '20'
+        REGISTRY = credentials('docker-registry')
+        KUBECONFIG = credentials('kubernetes-config')
+        SLACK_CHANNEL = '#devops'
+    }
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 1, unit: 'HOURS')
+        timestamps()
+    }
+    
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['development', 'qa', 'staging', 'production'], description: 'Target environment')
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run tests before deployment')
+        booleanParam(name: 'SKIP_SECURITY', defaultValue: false, description: 'Skip security scanning')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Custom image tag (optional)')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    log.info "Checking out code for ${env.BRANCH_NAME}"
+                }
+                checkout scm
+                script {
+                    env.IMAGE_TAG = params.IMAGE_TAG ?: env.GIT_COMMIT.take(8)
+                }
+            }
+        }
+        
+        stage('Prepare') {
+            steps {
+                container('php') {
+                    sh '''
+                        composer install --no-interaction --prefer-dist
+                        cp .env.example .env
+                        php artisan key:generate
+                    '''
+                }
+                container('node') {
+                    sh '''
+                        npm ci
+                    '''
+                }
+            }
+        }
+        
+        stage('Lint') {
+            steps {
+                parallel(
+                    "PHP Lint": {
+                        container('php') {
+                            sh 'composer phpcs'
+                        }
+                    },
+                    "Frontend Lint": {
+                        container('node') {
+                            sh 'npm run lint'
+                        }
+                    }
+                )
+            }
+        }
+        
+        stage('Test') {
+            when {
+                expression { params.RUN_TESTS }
+            }
+            steps {
+                parallel(
+                    "PHPUnit": {
+                        container('php') {
+                            sh 'composer test'
+                        }
+                    },
+                    "Jest": {
+                        container('node') {
+                            sh 'npm run test -- --ci'
+                        }
+                    }
+                )
+            }
+            post {
+                always {
+                    junit 'backend/test-results/*.xml'
+                    cobertura coberturaReporter: [
+                        includePattern: 'backend/coverage/**/*.xml',
+                        allowNullResults: true
+                    ]
+                }
+            }
+        }
+        
+        stage('Security') {
+            when {
+                expression { !params.SKIP_SECURITY }
+            }
+            steps {
+                parallel(
+                    "Secrets": {
+                        container('gitleaks') {
+                            sh 'gitleaks detect --source . --verbose'
+                        }
+                    },
+                    "SAST": {
+                        container('php') {
+                            sh 'composer psalm'
+                        }
+                    },
+                    "SCA": {
+                        container('php') {
+                            sh 'composer audit --no-interaction'
+                        }
+                    }
+                )
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    log.info "Building Docker image: ${env.IMAGE_TAG}"
+                }
+                container('docker') {
+                    sh """
+                        docker build -t education-erp:${env.IMAGE_TAG} .
+                        docker tag education-erp:${env.IMAGE_TAG)} ${REGISTRY}/education-erp:${env.IMAGE_TAG}
+                        docker push ${REGISTRY}/education-erp:${env.IMAGE_TAG}
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    expression { params.ENVIRONMENT != 'development' }
+                }
+            }
+            steps {
+                script {
+                    deployToEnvironment(params.ENVIRONMENT, env.IMAGE_TAG)
+                }
+            }
+        }
+        
+        stage('Smoke Test') {
+            steps {
+                script {
+                    def url = getEnvironmentUrl(params.ENVIRONMENT)
+                    sh """
+                        curl -f ${url}/health || exit 1
+                        curl -f ${url}/api/health || exit 1
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                notifySlack("success", "Build ${env.BUILD_NUMBER} completed successfully")
+            }
+            cleanWs()
+        }
+        failure {
+            script {
+                notifySlack("failure", "Build ${env.BUILD_NUMBER} failed")
+            }
+        }
+        always {
+            script {
+                log.info "Pipeline completed"
+            }
+        }
+    }
+}
+
+def deployToEnvironment(String env, String tag) {
+    switch(env) {
+        case 'development':
+            sh """
+                kubectl config use-context dev
+                helm upgrade --install education-erp ./helm/education-erp \
+                    --namespace development \
+                    --set image.tag=${tag} \
+                    --wait --timeout 10m
+            """
+            break
+        case 'qa':
+            sh """
+                kubectl config use-context qa
+                helm upgrade --install education-erp ./helm/education-erp \
+                    --namespace qa \
+                    --set image.tag=${tag} \
+                    --wait --timeout 10m
+            """
+            break
+        case 'staging':
+            sh """
+                kubectl config use-context staging
+                helm upgrade --install education-erp ./helm/education-erp \
+                    --namespace staging \
+                    --values ./helm/education-erp/values-staging.yaml \
+                    --set image.tag=${tag} \
+                    --wait --timeout 15m
+            """
+            break
+        case 'production':
+            input message: 'Deploy to Production?', ok: 'Deploy'
+            sh """
+                kubectl config use-context production
+                helm upgrade --install education-erp ./helm/education-erp \
+                    --namespace production \
+                    --values ./helm/education-erp/values-production.yaml \
+                    --set image.tag=${tag} \
+                    --wait --timeout 20m
+            """
+            break
+    }
+}
+
+def getEnvironmentUrl(String env) {
+    switch(env) {
+        case 'development': return 'https://dev.education-erp.example.com'
+        case 'qa': return 'https://qa.education-erp.example.com'
+        case 'staging': return 'https://staging.education-erp.example.com'
+        case 'production': return 'https://education-erp.example.com'
+        default: return 'http://localhost:8000'
+    }
+}
+
+def notifySlack(String status, String message) {
+    def color = status == 'success' ? '#36a64f' : '#ff0000'
+    def emoji = status == 'success' ? ':white_check_mark:' : ':x:'
+    
+    slackSend(
+        channel: SLACK_CHANNEL,
+        color: color,
+        message: "${emoji} ${message}\n${env.BUILD_URL}"
+    )
+}

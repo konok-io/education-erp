@@ -1,0 +1,198 @@
+# Education ERP Helm Chart Values
+
+replicaCount: 3
+
+image:
+  repository: education-erp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  httpsPort: 443
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: education-erp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: education-erp-tls
+      hosts:
+        - education-erp.example.com
+        - "*.education-erp.example.com"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: education-erp
+          topologyKey: kubernetes.io/hostname
+
+# Backend Configuration
+backend:
+  replicaCount: 3
+  image:
+    repository: education-erp
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    path: /api/health
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  env:
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_CHANNEL: stderr
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: redis
+    CACHE_DRIVER: redis
+
+# Frontend Configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: education-erp-frontend
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Ingress Configuration
+ingressClassName: nginx
+
+# Certificate Manager
+certManager:
+  enabled: true
+  issuer: letsencrypt-prod
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  grafana:
+    enabled: true
+    dashboard:
+      enabled: true
+
+# Logging
+logging:
+  enabled: true
+  logLevel: info
+  format: json
+  output: stdout
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 10Gi
+  accessMode: ReadWriteOnce
+
+# Redis Configuration
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    secretName: education-erp-redis
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 5Gi
+
+# Worker Configuration
+worker:
+  enabled: true
+  replicaCount: 2
+  command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+
+# Scheduler Configuration
+scheduler:
+  enabled: true
+  schedule: "* * * * *"
+  command: ["php", "artisan", "schedule:run"]
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

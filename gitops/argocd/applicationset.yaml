@@ -1,0 +1,107 @@
+# ArgoCD ApplicationSet for Education ERP
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: education-erp
+  namespace: argocd
+  labels:
+    app: education-erp
+    team: devops
+spec:
+  generators:
+    - matrix:
+        generators:
+          - clusters:
+              values:
+                name: ""
+                values:
+                  revision: HEAD
+                  destination: {}
+          - git:
+              repoURL: https://github.com/education-erp/infrastructure.git
+              revision: HEAD
+              directories:
+                - path: environments/*
+  template:
+    metadata:
+      name: 'education-erp-{{name}}'
+      labels:
+        app: education-erp
+        environment: '{{name}}'
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "#devops"
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: "#devops"
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: "#devops"
+    spec:
+      project: education-erp
+      source:
+        repoURL: https://github.com/education-erp/infrastructure.git
+        targetRevision: '{{values.revision}}'
+        path: 'environments/{{name}}'
+        helm:
+          valueFiles:
+            - values.yaml
+          parameters:
+            - name: image.tag
+              value: '{{revision}}'
+      destination:
+        server: '{{server}}'
+        namespace: '{{name}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagation=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
+      revisionHistoryLimit: 5
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: education-erp-production
+  namespace: argocd
+  labels:
+    app: education-erp
+    environment: production
+spec:
+  project: education-erp
+  source:
+    repoURL: https://github.com/education-erp/infrastructure.git
+    targetRevision: main
+    path: environments/production
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+  hasMultipleSources: false
