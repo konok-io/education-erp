@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace App\Models\Identity;
+
 use App\Enums\Identity\DeviceTrustLevel;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
