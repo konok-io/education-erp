@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('project_id')->nullable()->comment('FK to research_projects.id if needed');
             $table->string('grant_title');
             $table->text('description')->nullable();
-            $table->foreignId('funding_agency_id')->nullable()->constrained()->nullOnDelete();
+            $table->unsignedBigInteger('funding_agency_id')->nullable()->comment('FK to funding_agencies.id if table exists');
             $table->decimal('grant_amount', 14, 2);
             $table->string('currency', 10)->default('USD');
             $table->date('application_date')->nullable();
