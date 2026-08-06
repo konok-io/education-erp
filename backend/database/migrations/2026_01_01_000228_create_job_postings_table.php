@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('jobs', function (Blueprint $table) {
+        Schema::create('job_postings', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('job_number')->unique();
