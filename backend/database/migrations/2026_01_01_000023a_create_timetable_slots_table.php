@@ -12,8 +12,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('timetable_id')->constrained('timetables')->cascadeOnDelete();
-            $table->unsignedBigInteger('period_id')->nullable();
-            $table->foreign('period_id')->nullable()->references('id')->on('periods')->nullOnDelete();
+            $table->unsignedBigInteger('period_id')->nullable()->comment('References periods.id when table exists');
             $table->foreignId('course_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('teacher_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->foreignId('room_id')->nullable()->constrained()->nullOnDelete();
