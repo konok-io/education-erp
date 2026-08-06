@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             HostelSeeder::class, // Phase 038 - Hostel Seeder
             TransportSeeder::class, // Phase 038 - Transport Seeder
             FacilitySeeder::class, // Phase 038 - Facility Seeder
+            ExamSeeder::class, // Phase 039 - Examination Seeder
             BookCategorySeeder::class,
             SubjectSeeder::class,
             ProductCategorySeeder::class,
