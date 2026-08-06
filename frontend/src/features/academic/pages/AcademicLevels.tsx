@@ -6,17 +6,17 @@ interface AcademicLevel {
   name: string;
   short_name: string;
   code: string;
-  education_type: string;
-  duration: number;
+  level_order: number;
+  description: string;
   status: 'active' | 'inactive';
 }
 
 const mockLevels: AcademicLevel[] = [
-  { uuid: '1', name: 'Primary Education', short_name: 'PRI', code: 'L1', education_type: 'school', duration: 5, status: 'active' },
-  { uuid: '2', name: 'Secondary Education', short_name: 'SEC', code: 'L2', education_type: 'school', duration: 3, status: 'active' },
-  { uuid: '3', name: 'Higher Secondary', short_name: 'HSE', code: 'L3', education_type: 'college', duration: 2, status: 'active' },
-  { uuid: '4', name: 'Bachelor Degree', short_name: 'BSc', code: 'L4', education_type: 'university', duration: 4, status: 'active' },
-  { uuid: '5', name: 'Master Degree', short_name: 'MSc', code: 'L5', education_type: 'university', duration: 2, status: 'active' },
+  { uuid: '1', name: 'Primary Education', short_name: 'PRI', code: 'L1', level_order: 1, description: 'Primary school education (Class 1-5)', status: 'active' },
+  { uuid: '2', name: 'Secondary Education', short_name: 'SEC', code: 'L2', level_order: 2, description: 'Secondary school education (Class 6-10)', status: 'active' },
+  { uuid: '3', name: 'Higher Secondary', short_name: 'HSE', code: 'L3', level_order: 3, description: 'Higher Secondary (Class 11-12)', status: 'active' },
+  { uuid: '4', name: 'Bachelor Degree', short_name: 'BSc', code: 'L4', level_order: 4, description: 'Undergraduate degree programs', status: 'active' },
+  { uuid: '5', name: 'Master Degree', short_name: 'MSc', code: 'L5', level_order: 5, description: 'Postgraduate degree programs', status: 'active' },
 ];
 
 const AcademicLevels: React.FC = () => {
