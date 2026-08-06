@@ -23,4 +23,22 @@ export default defineConfig({
       '@assets': import.meta.dirname + '/src/assets',
     },
   },
+  server: {
+    host: 'education-erp.test',
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://api.education-erp.test',
+        changeOrigin: true,
+      },
+      '/sanctum': {
+        target: 'http://api.education-erp.test',
+        changeOrigin: true,
+      },
+      '/storage': {
+        target: 'http://api.education-erp.test',
+        changeOrigin: true,
+      },
+    },
+  },
 })
