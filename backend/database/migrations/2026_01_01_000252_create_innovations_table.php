@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('innovation_type', 50)->nullable();
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->string('stage', 50)->default('prototype');
             $table->text('technology_details')->nullable();
             $table->text('market_potential')->nullable();

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('document_type', 50);
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->foreignId('publication_id')->nullable()->constrained()->nullOnDelete();
             $table->string('file_path')->nullable();
             $table->string('file_name')->nullable();

@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('patent_number')->unique();
             $table->string('patent_title');
             $table->text('abstract')->nullable();
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->string('patent_type', 50)->nullable();
             $table->string('status', 50)->default('pending');
             $table->string('country')->nullable();

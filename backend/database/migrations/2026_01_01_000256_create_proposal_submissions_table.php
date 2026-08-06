@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('proposal_number')->unique();
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('research_projects')->nullOnDelete();
             $table->string('proposal_title');
             $table->text('proposal_abstract')->nullable();
             $table->string('proposal_type', 50)->nullable();
