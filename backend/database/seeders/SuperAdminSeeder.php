@@ -39,15 +39,12 @@ class SuperAdminSeeder extends Seeder
             return;
         }
 
-        // Get first campus
-        $campus = DB::table('campuses')->first();
-
         User::create([
             'name' => 'Super Admin',
             'email' => $superAdminEmail,
             'password' => Hash::make('@rsm@k@1A'),
             'role_id' => $roleId,
-            'campus_id' => $campus->id ?? null,
+            'campus_id' => null,
             'status' => 'active',
             'email_verified_at' => now(),
         ]);
