@@ -57,7 +57,7 @@ return new class extends Migration
             $table->text('remarks')->nullable();
             $table->timestamps();
 
-            $table->unique(['employee_onboarding_id', 'checklist_id']);
+            $table->unique(['employee_onboarding_id', 'checklist_id'], 'oc_unique');
         });
     }
 
