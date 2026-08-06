@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('goods_receive_note_items', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('grn_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('goods_receive_note_id')->constrained('goods_receive_notes')->cascadeOnDelete();
             $table->foreignId('purchase_order_item_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
             $table->string('item_description');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('condition', 50)->default('good');
             $table->timestamps();
             
-            $table->index('grn_id');
+            $table->index('goods_receive_note_id');
             $table->index('product_id');
         });
     }
