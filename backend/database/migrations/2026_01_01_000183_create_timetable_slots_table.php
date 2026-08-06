@@ -12,10 +12,10 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('timetable_id')->constrained('timetables')->cascadeOnDelete();
-            $table->unsignedBigInteger('period_id')->nullable()->comment('References periods.id when table exists');
+            $table->foreignId('period_id')->nullable()->constrained('periods')->nullOnDelete();
             $table->unsignedBigInteger('course_id')->nullable()->comment('References courses.id when table exists');
             $table->foreignId('teacher_id')->nullable()->constrained('employees')->nullOnDelete();
-            $table->unsignedBigInteger('room_id')->nullable()->comment('References rooms.id when table exists');
+            $table->foreignId('room_id')->nullable()->constrained('rooms')->nullOnDelete();
             $table->string('day', 20); // monday, tuesday, etc.
             $table->integer('order')->default(0);
             $table->string('type', 50)->default('lecture'); // lecture, lab, tutorial, break

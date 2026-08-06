@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('room_code')->unique();
             $table->string('room_name');
-            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('library_branch_id')->nullable()->constrained('library_branches')->nullOnDelete();
             $table->string('floor')->nullable();
             $table->integer('total_seats');
             $table->integer('available_seats');
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamps();
             
             $table->index('room_code');
-            $table->index('branch_id');
+            $table->index('library_branch_id');
             $table->index('is_active');
         });
     }
