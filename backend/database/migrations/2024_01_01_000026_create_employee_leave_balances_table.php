@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('balance')->default(0);
             $table->timestamps();
             
-            $table->unique(['employee_id', 'leave_type_id', 'fiscal_year']);
+            $table->unique(['employee_id', 'leave_type_id', 'fiscal_year'], 'elb_unique');
             $table->index(['employee_id', 'fiscal_year']);
         });
     }

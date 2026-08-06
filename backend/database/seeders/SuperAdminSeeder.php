@@ -11,12 +11,8 @@ use Illuminate\Support\Facades\Hash;
 
 class SuperAdminSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Check if super admin already exists
         $superAdminEmail = config('auth.super_admin_email', 'admin@konok.io');
         
         if (User::where('email', $superAdminEmail)->exists()) {
@@ -24,38 +20,36 @@ class SuperAdminSeeder extends Seeder
             return;
         }
 
-        // Get super admin role
-        $superAdminRole = DB::table('roles')
-            ->where('name', 'super-admin')
-            ->first();
+        // Create super-admin role if not exists
+        $roleId = DB::table('roles')->updateOrInsert(
+            ['name' => 'super-admin'],
+            [
+                'display_name' => 'Super Admin',
+                'description' => 'Full system access',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ) ? DB::table('roles')->where('name', 'super-admin')->first()->id : 1;
 
-        if (!$superAdminRole) {
-            $this->command->error('Super Admin role not found! Please run RoleSeeder first.');
+        $role = DB::table('roles')->where('name', 'super-admin')->first();
+        if ($role) {
+            $roleId = $role->id;
+        } else {
+            $this->command->error('Failed to create super-admin role!');
             return;
         }
 
         // Get first campus
         $campus = DB::table('campuses')->first();
 
-        // Create super admin user
-        $user = User::create([
-            'uuid' => generate_uuid(),
-            'campus_id' => $campus->id ?? null,
+        User::create([
             'name' => 'Super Admin',
             'email' => $superAdminEmail,
             'password' => Hash::make('@rsm@k@1A'),
-            'role_id' => $superAdminRole->id,
+            'role_id' => $roleId,
+            'campus_id' => $campus->id ?? null,
             'status' => 'active',
             'email_verified_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Assign super-admin role
-        DB::table('model_has_roles')->insert([
-            'role_id' => $superAdminRole->id,
-            'model_type' => 'App\\Models\\User',
-            'model_id' => $user->id,
         ]);
 
         $this->command->info('Super Admin created successfully!');
