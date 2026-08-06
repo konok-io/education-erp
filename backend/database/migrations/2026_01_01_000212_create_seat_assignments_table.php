@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('seat_assignments', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('seat_plan_id')->nullable()->constrained('seat_plans')->cascadeOnDelete();
+            $table->foreignId('seat_plan_id')->nullable()->constrained('exam_seat_plans')->cascadeOnDelete();
             $table->unsignedBigInteger('student_id')->nullable();
             $table->string('student_name')->nullable();
             $table->string('roll_number', 50)->nullable();
