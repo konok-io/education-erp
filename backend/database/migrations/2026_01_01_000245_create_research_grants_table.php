@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('grant_number')->unique();
-            $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
+            $table->unsignedBigInteger('project_id')->nullable()->comment('FK to research_projects.id if needed');
             $table->string('grant_title');
             $table->text('description')->nullable();
             $table->foreignId('funding_agency_id')->nullable()->constrained()->nullOnDelete();
