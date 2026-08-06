@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             TransportSeeder::class, // Phase 038 - Transport Seeder
             FacilitySeeder::class, // Phase 038 - Facility Seeder
             ExamSeeder::class, // Phase 039 - Examination Seeder
+            ConvocationSeeder::class, // Phase 040 - Convocation Seeder
             BookCategorySeeder::class,
             SubjectSeeder::class,
             ProductCategorySeeder::class,
