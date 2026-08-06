@@ -46,8 +46,9 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/v1/convocation.php';
 });
 
-// API v3 routes (DevSecOps Platform & Observability)
+// API v3 routes (DevSecOps Platform, Observability & Backup/DR)
 Route::prefix('v3')->group(function () {
     require __DIR__ . '/v3/devsecops.php';
     require __DIR__ . '/v3/observability.php';
+    require __DIR__ . '/v3/backup.php';
 });
